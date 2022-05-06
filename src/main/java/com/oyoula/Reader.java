@@ -4,11 +4,14 @@ import com.oyoula.data.Column;
 import com.oyoula.data.Model;
 import com.oyoula.data.Table;
 import com.oyoula.parser.CdmParser;
+import com.oyoula.parser.LdmParser;
 import com.oyoula.parser.PdmParser;
 import org.dom4j.DocumentException;
 import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.AnsiConsole;
 
+import java.io.File;
+import java.net.URL;
 import java.util.*;
 
 import static org.fusesource.jansi.Ansi.Color.*;
@@ -19,16 +22,28 @@ public class Reader {
 
     public static void init(String name, String filename) {
 
+        URL url = Reader.class.getResource("");
+        String protocol = url.getProtocol();
 
-        AnsiConsole.systemInstall();
+        if ("jar".equals(protocol)) {
+            AnsiConsole.systemInstall();
+        }
+
         System.out.println();
 
-        if (!name.equals("pdm") && !name.equals("cdm") ) {
-//            throw new IllegalArgumentException("第一个参数必须文件类型，支持pdm与cdm");
+        if (!name.equals("pdm") && !name.equals("cdm") && !name.equals("ldm") ) {
+            throw new IllegalArgumentException("第一个参数必须是文件类型，支持pdm、cdm、ldm");
+        }
+
+        File file = new File(filename);
+
+        if(!file.exists()) {
+            throw new IllegalArgumentException("第二个参数必须是文件路径");
         }
 
         parsers.put("pdm",new PdmParser());
         parsers.put("cdm",new CdmParser());
+        parsers.put("ldm",new LdmParser());
 
         Parser parser = (Parser) parsers.get(name);
 
@@ -77,9 +92,9 @@ public class Reader {
             }
         }
 
-        AnsiConsole.systemUninstall();
-
-
+        if ("jar".equals(protocol)) {
+            AnsiConsole.systemUninstall();
+        }
     }
 
 }
