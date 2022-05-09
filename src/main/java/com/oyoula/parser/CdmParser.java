@@ -3,6 +3,7 @@ package com.oyoula.parser;
 import com.oyoula.Parser;
 import com.oyoula.data.Column;
 import com.oyoula.data.Model;
+import com.oyoula.data.Relation;
 import com.oyoula.data.Table;
 import org.dom4j.*;
 
@@ -18,8 +19,9 @@ public class CdmParser extends Parser {
         Element code = model.element(new QName("Code", aNamespace));
 
         List<Table> tables = getTables();
+        List<Relation> relations = getReference(tables);
 
-        Model dataModel = new Model(name.getText(),code.getText(),tables);
+        Model dataModel = new Model(name.getText(),code.getText(),tables,relations);
         return dataModel;
     }
 
@@ -42,6 +44,7 @@ public class CdmParser extends Parser {
 
         for (Element tableElement : tableElements) {
 
+            String tableId = tableElement.attribute("Id").getValue();
             Element name = tableElement.element(new QName("Name", aNamespace));
             Element code = tableElement.element(new QName("Code", aNamespace));
 
@@ -91,19 +94,53 @@ public class CdmParser extends Parser {
 
                 boolean primary = attribute.attribute("Id").getValue().equals(pkColumnIds.get(0));
 
-                Column dataColumn = new Column(getTextFromEle(cname), getTextFromEle(ccode), getTextFromEle(cDataType), getTextFromEle(cLength), "", primary,mandatory != null);
+                Column dataColumn = new Column(columnId, getTextFromEle(cname), getTextFromEle(ccode), getTextFromEle(cDataType), getTextFromEle(cLength), "", primary,mandatory != null);
 
                 dataColumns.add(dataColumn);
 
-
             }
 
-            Table dataTable = new Table(name.getText(),code.getText(),dataColumns);
+            Table dataTable = new Table(tableId, name.getText(),code.getText(),dataColumns);
 
             dataTables.add(dataTable);
-
         }
 
         return dataTables;
+    }
+
+    public List<Relation> getReference(List<Table> tables){
+        List<Element> relationEles = new ArrayList<>();
+        Element referencesEle = model.element(new QName("Relationships", cNamespace));
+        if (referencesEle != null) {
+            relationEles.addAll(referencesEle.elements(new QName("Relationship", oNamespace)));
+        }
+
+        List<Relation> dataRelations = new ArrayList<>();
+
+        for (Element relationElement : relationEles) {
+            Element rname = relationElement.element(new QName("Name", aNamespace));
+            Element rcode = relationElement.element(new QName("Code", aNamespace));
+
+            List<Element> parents = relationElement.element(new QName("Object1", cNamespace)).elements(new QName("Entity", oNamespace));
+            List<Element> childs = relationElement.element(new QName("Object2", cNamespace)).elements(new QName("Entity", oNamespace));
+
+            Element entity1ToEntity = relationElement.element(new QName("Entity1ToEntity2RoleCardinality", aNamespace));
+            Element entity2ToEntity = relationElement.element(new QName("Entity2ToEntity1RoleCardinality", aNamespace));
+
+            String parentId = parents.get(0).attribute("Ref").getValue();
+            String childId = childs.get(0).attribute("Ref").getValue();
+
+            String text = entity1ToEntity.getText().replace(",", "_").toUpperCase();
+            String toText = entity2ToEntity.getText().replace(",", "_").toUpperCase();
+
+            Table pTable = tables.stream().filter(u -> u.id.equals(parentId)).findAny().orElse(null);
+            Table cTable = tables.stream().filter(u -> u.id.equals(childId)).findAny().orElse(null);
+
+            Relation dataRelation = new Relation(getTextFromEle(rname),getTextFromEle(rcode),pTable.name,"",cTable.name,"",text,toText);
+
+            dataRelations.add(dataRelation);
+
+        }
+        return dataRelations;
     }
 }

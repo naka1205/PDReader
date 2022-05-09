@@ -64,8 +64,8 @@ public class Parser implements Target{
         return s.toString();
     }
 
-    @Override
     public Model getModel() {
         return null;
     }
+
 }

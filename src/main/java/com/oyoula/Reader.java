@@ -2,6 +2,7 @@ package com.oyoula;
 
 import com.oyoula.data.Column;
 import com.oyoula.data.Model;
+import com.oyoula.data.Relation;
 import com.oyoula.data.Table;
 import com.oyoula.parser.CdmParser;
 import com.oyoula.parser.LdmParser;
@@ -87,9 +88,23 @@ public class Reader {
                     System.out.print("   ");
                 }
 
-
                 System.out.println();
             }
+        }
+
+        int s = 0;
+        for (Relation relation : model.relations) {
+            s++;
+            System.out.println("------>" + Ansi.ansi().fg(BLUE).a("NO." + s) + Ansi.ansi().fg(RED).a(" " + relation.code + " ") +
+                    Ansi.ansi().fg(YELLOW).a(relation.name) + Ansi.ansi().fgDefault().a("<-------"));
+            System.out.print(relation.parentTable + " ");
+            System.out.print(relation.parentColumn + " ");
+            System.out.print(relation.childTable + " ");
+            System.out.print(relation.childColumn + " ");
+            System.out.print(relation.text + " ");
+            System.out.print(relation.toText + " ");
+
+            System.out.println();
         }
 
         if ("jar".equals(protocol)) {
